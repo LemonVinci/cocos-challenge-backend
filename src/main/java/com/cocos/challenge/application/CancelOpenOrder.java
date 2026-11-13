@@ -5,7 +5,9 @@ import com.cocos.challenge.domain.OpenOrder;
 import com.cocos.challenge.domain.OrderStatus;
 import com.cocos.challenge.domain.Position;
 import com.cocos.challenge.domain.Side;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class CancelOpenOrder implements CancelOrder {
 
 	@Override

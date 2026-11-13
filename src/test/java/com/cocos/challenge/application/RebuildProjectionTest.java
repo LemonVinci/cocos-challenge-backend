@@ -56,6 +56,11 @@ class RebuildProjectionTest {
 		}
 
 		@Override
+		public Account lockAccount(int userId) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
 		public boolean userExists(int userId) {
 			return false;
 		}

@@ -75,32 +75,28 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 
 	@Override
 	public Optional<Account> find(int userId) {
-		List<AccountCash> cash = jdbc.query("""
-				SELECT settled_cash, reserved_cash
-				FROM account_cash
-				WHERE user_id = ?
-				""",
-				(rs, row) -> new AccountCash(rs.getBigDecimal("settled_cash"), rs.getBigDecimal("reserved_cash")),
-				userId);
+		List<AccountCash> cash = cashRows(userId, false);
 		if (cash.isEmpty()) {
 			return Optional.empty();
 		}
-		List<Position> positions = jdbc.query("""
-				SELECT instrument_id, quantity, cost_basis, reserved_quantity
-				FROM positions
-				WHERE user_id = ?
-				""",
-				(rs, row) -> new Position(
-						rs.getInt("instrument_id"),
-						rs.getInt("quantity"),
-						rs.getBigDecimal("cost_basis"),
-						rs.getInt("reserved_quantity")),
-				userId);
-		Account account = Account.of(userId, cash.getFirst());
-		for (Position position : positions) {
-			account = account.withPosition(position);
+		return Optional.of(account(userId, cash.getFirst()));
+	}
+
+	@Override
+	public Account lockAccount(int userId) {
+		List<AccountCash> cash = cashRows(userId, true);
+		if (cash.isEmpty()) {
+			jdbc.queryForList("SELECT id FROM users WHERE id = ? FOR UPDATE", Integer.class, userId);
+			cash = cashRows(userId, true);
 		}
-		return Optional.of(account);
+		if (cash.isEmpty()) {
+			jdbc.update("""
+					INSERT INTO account_cash (user_id, settled_cash, reserved_cash)
+					VALUES (?, 0, 0)
+					""", userId);
+			return account(userId, AccountCash.empty());
+		}
+		return account(userId, cash.getFirst());
 	}
 
 	@Override
@@ -117,10 +113,14 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 		jdbc.update("""
 				INSERT INTO account_cash (user_id, settled_cash, reserved_cash)
 				VALUES (?, ?, ?)
+				ON CONFLICT (user_id) DO UPDATE
+				SET settled_cash = EXCLUDED.settled_cash,
+				    reserved_cash = EXCLUDED.reserved_cash
 				""",
 				account.userId(),
 				account.cash().settledCash(),
 				account.cash().reservedCash());
+		jdbc.update("DELETE FROM positions WHERE user_id = ?", account.userId());
 		for (Position position : account.positions().values()) {
 			jdbc.update("""
 					INSERT INTO positions (user_id, instrument_id, quantity, cost_basis, reserved_quantity)
@@ -132,6 +132,43 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 					position.costBasis(),
 					position.reservedQuantity());
 		}
+	}
+
+	private Account account(int userId, AccountCash cash) {
+		List<Position> positions = jdbc.query("""
+				SELECT instrument_id, quantity, cost_basis, reserved_quantity
+				FROM positions
+				WHERE user_id = ?
+				""",
+				(rs, row) -> new Position(
+						rs.getInt("instrument_id"),
+						rs.getInt("quantity"),
+						rs.getBigDecimal("cost_basis"),
+						rs.getInt("reserved_quantity")),
+				userId);
+		Account account = Account.of(userId, cash);
+		for (Position position : positions) {
+			account = account.withPosition(position);
+		}
+		return account;
+	}
+
+	private List<AccountCash> cashRows(int userId, boolean lock) {
+		String sql = lock
+				? """
+				SELECT settled_cash, reserved_cash
+				FROM account_cash
+				WHERE user_id = ?
+				FOR UPDATE
+				"""
+				: """
+				SELECT settled_cash, reserved_cash
+				FROM account_cash
+				WHERE user_id = ?
+				""";
+		return jdbc.query(sql,
+				(rs, row) -> new AccountCash(rs.getBigDecimal("settled_cash"), rs.getBigDecimal("reserved_cash")),
+				userId);
 	}
 
 	@Override
