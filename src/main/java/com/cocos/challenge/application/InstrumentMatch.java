@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
+
 public record InstrumentMatch(Instrument instrument, Optional<Quote> quote) {
 
 	public InstrumentMatch {
@@ -15,7 +17,7 @@ public record InstrumentMatch(Instrument instrument, Optional<Quote> quote) {
 	}
 
 	public static InstrumentMatch of(Instrument instrument, BigDecimal close, BigDecimal previousClose) {
-		if (close == null && previousClose == null) {
+		if (isNull(close) && isNull(previousClose)) {
 			return new InstrumentMatch(instrument, Optional.empty());
 		}
 		return new InstrumentMatch(instrument, Optional.of(new Quote(close, previousClose)));

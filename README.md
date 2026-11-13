@@ -44,7 +44,7 @@ Los pesos disponibles son `settled_cash - reserved_cash`. Las acciones disponibl
 
 El nocional es `size × price`. En una orden a mercado, `price` es el `close` del día pedido. En una límite, es el precio enviado. `size` es la cantidad de esa orden. `quantity` es la tenencia acumulada. Si el cliente envía un monto en pesos, `size` es `floor(monto / price)`.
 
-Una `MARKET` se inserta `FILLED` o `REJECTED`. Una `LIMIT` se inserta `NEW` o `REJECTED`. Solo se cancela una orden `NEW`, y pasa a `CANCELLED`. Las transferencias no tienen endpoint: ya están en `orders` y la carga inicial de la foto las lee.
+Una `MARKET` se inserta `FILLED` o `REJECTED`. Una `LIMIT` se inserta `NEW` o `REJECTED`. Solo se cancela una orden `NEW`, y pasa a `CANCELLED`. Las transferencias no tienen endpoint: ya están en `orders`. Si `account_cash` está vacía al arrancar, la aplicación recorre las órdenes por fecha y aplica el estado guardado. Una `FILLED` mueve la caja y la posición, también un límite que ya quedó ejecutado y una venta que deja la posición en corto. Una `NEW` reserva. `REJECTED` y `CANCELLED` no cambian la foto, porque el alta y la cancelación ya se compensaron en esa fila.
 
 Una orden de negocio que no se puede ejecutar se guarda `REJECTED` y responde 201. Si el `userId` o el `instrumentId` no existen, o el instrumento no es una acción, la respuesta es 404 y no se inserta nada.
 
