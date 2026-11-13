@@ -58,9 +58,14 @@ El esquema se versiona con Flyway. La base provista ya tiene `users`, `instrumen
 
 ## Arranque
 
-Requiere JDK 21.
+Requiere JDK 21. La conexión no va en el repo. Para apuntar a Neon usá el host directo, sin `-pooler`, porque Flyway toma un lock de sesión.
 
 ```bash
+export DB_URL='jdbc:postgresql://HOST:5432/neondb?sslmode=require'
+export DB_USERNAME='neondb_owner'
+export DB_PASSWORD='***'
 ./mvnw test
 ./mvnw spring-boot:run
 ```
+
+`./mvnw test` no usa esa base: levanta un Postgres vacío y corre las dos migraciones.
