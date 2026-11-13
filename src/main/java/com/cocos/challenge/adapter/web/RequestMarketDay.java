@@ -8,13 +8,15 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 
+import static java.util.Objects.isNull;
+
 final class RequestMarketDay {
 
 	private RequestMarketDay() {
 	}
 
 	static MarketDay parse(String datetime) {
-		if (datetime == null || datetime.isBlank()) {
+		if (isNull(datetime) || datetime.isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "datetime is required");
 		}
 		String value = datetime.trim();
