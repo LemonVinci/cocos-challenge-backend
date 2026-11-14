@@ -16,15 +16,19 @@ final class RequestMarketDay {
 	}
 
 	static MarketDay parse(String datetime) {
+		return MarketDay.from(localTimestamp(datetime));
+	}
+
+	static LocalDateTime localTimestamp(String datetime) {
 		if (isNull(datetime) || datetime.isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "datetime is required");
 		}
 		String value = datetime.trim();
 		try {
-			return MarketDay.from(OffsetDateTime.parse(value));
+			return OffsetDateTime.parse(value).atZoneSameInstant(MarketDay.ZONE).toLocalDateTime();
 		} catch (DateTimeParseException offset) {
 			try {
-				return MarketDay.from(LocalDateTime.parse(value));
+				return LocalDateTime.parse(value);
 			} catch (DateTimeParseException local) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "datetime is invalid");
 			}

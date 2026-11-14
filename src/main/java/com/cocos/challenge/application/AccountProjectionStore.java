@@ -12,6 +12,8 @@ public interface AccountProjectionStore {
 
 	Optional<Account> find(int userId);
 
+	Account lockAccount(int userId);
+
 	boolean userExists(int userId);
 
 	void save(Account account);

@@ -1,7 +1,10 @@
 package com.cocos.challenge.application;
 
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 
+@Component
 public final class SubmitOrder implements UseCase<PlaceOrderCommand, PlacedOrder> {
 
 	private final List<PlaceOrder> placements;

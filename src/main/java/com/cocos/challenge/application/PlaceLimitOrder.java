@@ -8,11 +8,14 @@ import com.cocos.challenge.domain.Position;
 import com.cocos.challenge.domain.ShareCount;
 import com.cocos.challenge.domain.Side;
 
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
 import static java.util.Objects.isNull;
 
+@Component
 public final class PlaceLimitOrder implements PlaceOrder {
 
 	@Override

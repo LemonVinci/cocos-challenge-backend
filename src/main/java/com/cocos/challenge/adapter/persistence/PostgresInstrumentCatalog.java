@@ -2,6 +2,7 @@ package com.cocos.challenge.adapter.persistence;
 
 import com.cocos.challenge.application.InstrumentCatalog;
 import com.cocos.challenge.application.InstrumentMatch;
+import com.cocos.challenge.application.Instruments;
 import com.cocos.challenge.application.MarketPrice;
 import com.cocos.challenge.domain.Instrument;
 import com.cocos.challenge.domain.InstrumentType;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class PostgresInstrumentCatalog implements InstrumentCatalog, MarketPrice {
+public class PostgresInstrumentCatalog implements InstrumentCatalog, Instruments, MarketPrice {
 
 	private final JdbcTemplate jdbc;
 
@@ -52,6 +53,22 @@ public class PostgresInstrumentCatalog implements InstrumentCatalog, MarketPrice
 				likePattern(ticker),
 				likePattern(name),
 				likePattern(name));
+	}
+
+	@Override
+	public Optional<Instrument> findById(int id) {
+		List<Instrument> instruments = jdbc.query("""
+				SELECT id, ticker, name, type
+				FROM instruments
+				WHERE id = ?
+				""",
+				(rs, row) -> new Instrument(
+						rs.getInt("id"),
+						rs.getString("ticker"),
+						rs.getString("name"),
+						InstrumentType.parse(rs.getString("type"))),
+				id);
+		return instruments.stream().findFirst();
 	}
 
 	@Override

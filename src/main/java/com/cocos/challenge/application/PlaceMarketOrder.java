@@ -8,9 +8,12 @@ import com.cocos.challenge.domain.Position;
 import com.cocos.challenge.domain.ShareCount;
 import com.cocos.challenge.domain.Side;
 
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
+@Component
 public final class PlaceMarketOrder implements PlaceOrder {
 
 	private final MarketPrice prices;
