@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
+import static java.util.Objects.isNull;
+
 record OrderBody(
 		Integer userId,
 		Integer instrumentId,
@@ -21,7 +23,7 @@ record OrderBody(
 		String datetime) {
 
 	NewOrder toCommand() {
-		if (userId == null || instrumentId == null || side == null || type == null) {
+		if (isNull(userId) || isNull(instrumentId) || isNull(side) || isNull(type)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId, instrumentId, side and type are required");
 		}
 		Side parsedSide;
