@@ -52,6 +52,8 @@ Una orden de negocio que no se puede ejecutar se guarda `REJECTED` y responde 20
 
 Al crear o cancelar una orden, la transacción bloquea la fila de `account_cash` de ese usuario con `SELECT … FOR UPDATE`. Otra orden de la misma cuenta espera y lee los saldos ya actualizados. Usuarios distintos no se bloquean. Leer el portfolio no toma ese lock.
 
+Si el cliente manda el header `Idempotency-Key`, un reintento devuelve la orden ya guardada y no vuelve a mover la caja. Cada conexión espera como máximo un segundo el lock y dos segundos la consulta. El pool tiene 20 conexiones. `account.lock` y `account.transaction` miden esa espera y la duración de la transacción.
+
 ## Base
 
 El esquema se versiona con Flyway. La base provista ya tiene `users`, `instruments`, `orders` y `marketdata`: esa foto es el baseline y no se vuelve a crear en Neon. Las migraciones siguientes agregan `account_cash`, `positions` y los índices. Una base vacía, como la de los tests, corre también el baseline.

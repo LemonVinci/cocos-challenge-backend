@@ -50,10 +50,15 @@ class CocosChallengeApplicationTests {
 				SELECT indexname
 				FROM pg_indexes
 				WHERE schemaname = 'public'
-				  AND indexname IN ('orders_account_idx', 'marketdata_latest_idx')
+				  AND indexname IN ('orders_account_idx', 'orders_idempotency_idx', 'marketdata_latest_idx')
 				ORDER BY indexname
 				""", String.class);
-		assertThat(indexes).containsExactly("marketdata_latest_idx", "orders_account_idx");
+		assertThat(indexes).containsExactly("marketdata_latest_idx", "orders_idempotency_idx");
+		assertThat(jdbc.queryForObject(
+				"SELECT indexdef FROM pg_indexes WHERE indexname = 'marketdata_latest_idx'",
+				String.class)).contains("(instrumentid, date, id DESC)");
+		assertThat(jdbc.queryForObject("SHOW lock_timeout", String.class)).isEqualTo("1s");
+		assertThat(jdbc.queryForObject("SHOW statement_timeout", String.class)).isEqualTo("2s");
 	}
 
 	private static EmbeddedPostgres startPostgres() {

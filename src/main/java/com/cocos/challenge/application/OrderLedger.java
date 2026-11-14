@@ -8,5 +8,7 @@ public interface OrderLedger {
 
 	Optional<StoredOrder> find(int id);
 
+	Optional<StoredOrder> findByIdempotency(int userId, String idempotencyKey);
+
 	void markCancelled(int id);
 }

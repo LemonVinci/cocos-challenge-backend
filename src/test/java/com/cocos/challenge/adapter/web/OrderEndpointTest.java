@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -211,6 +212,37 @@ class OrderEndpointTest {
 				.andExpect(status().isBadRequest());
 
 		assertThat(orderCount(null)).isZero();
+	}
+
+	@Test
+	void theSameIdempotencyKeyReturnsTheStoredOrderAndDoesNotDebitAgain() throws Exception {
+		String body = order("BUY", "MARKET", "\"quantity\": 10", null);
+		MvcResult created = mockMvc.perform(post("/orders")
+						.header("Idempotency-Key", "buy-pamp-10")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.status").value("FILLED"))
+				.andReturn();
+		int id = ((Number) com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id")).intValue();
+
+		mockMvc.perform(post("/orders")
+						.header("Idempotency-Key", "buy-pamp-10")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(id))
+				.andExpect(jsonPath("$.status").value("FILLED"));
+
+		assertThat(cash("settled_cash")).isEqualByComparingTo("8500.00");
+		assertThat(orderCount("FILLED")).isEqualTo(1);
+
+		mockMvc.perform(get("/actuator/metrics/account.lock"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.measurements[?(@.statistic=='COUNT')].value").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThan(0.0))));
+		mockMvc.perform(get("/actuator/metrics/account.transaction"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.measurements[?(@.statistic=='COUNT')].value").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThan(0.0))));
 	}
 
 	private BigDecimal cash(String column) {

@@ -1,6 +1,7 @@
 package com.cocos.challenge.adapter.persistence;
 
 import com.cocos.challenge.application.AccountProjectionStore;
+import com.cocos.challenge.application.AccountTiming;
 import com.cocos.challenge.application.BookOrder;
 import com.cocos.challenge.application.MarketBoard;
 import com.cocos.challenge.application.OrderHistory;
@@ -29,9 +30,11 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 	private static final long PROJECTION_LOCK = 824211L;
 
 	private final JdbcTemplate jdbc;
+	private final AccountTiming timing;
 
-	public PostgresAccounts(JdbcTemplate jdbc) {
+	public PostgresAccounts(JdbcTemplate jdbc, AccountTiming timing) {
 		this.jdbc = jdbc;
+		this.timing = timing;
 	}
 
 	@Override
@@ -84,6 +87,17 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 
 	@Override
 	public Account lockAccount(int userId) {
+		long start = System.nanoTime();
+		AccountCash cash;
+		try {
+			cash = lockedCash(userId);
+		} finally {
+			timing.recordLock(System.nanoTime() - start);
+		}
+		return account(userId, cash);
+	}
+
+	private AccountCash lockedCash(int userId) {
 		List<AccountCash> cash = cashRows(userId, true);
 		if (cash.isEmpty()) {
 			jdbc.queryForList("SELECT id FROM users WHERE id = ? FOR UPDATE", Integer.class, userId);
@@ -94,9 +108,9 @@ public class PostgresAccounts implements OrderHistory, AccountProjectionStore, M
 					INSERT INTO account_cash (user_id, settled_cash, reserved_cash)
 					VALUES (?, 0, 0)
 					""", userId);
-			return account(userId, AccountCash.empty());
+			return AccountCash.empty();
 		}
-		return account(userId, cash.getFirst());
+		return cash.getFirst();
 	}
 
 	@Override

@@ -29,7 +29,7 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 
 	@Override
 	@Transactional
-	public Optional<OrderReceipt> execute(NewOrder command) {
+	public Optional<AcceptedOrder> execute(NewOrder command) {
 		if (!accounts.userExists(command.userId())) {
 			return Optional.empty();
 		}
@@ -38,6 +38,12 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 			return Optional.empty();
 		}
 		Account account = accounts.lockAccount(command.userId());
+		if (command.idempotencyKey() != null) {
+			Optional<StoredOrder> existing = orders.findByIdempotency(command.userId(), command.idempotencyKey());
+			if (existing.isPresent()) {
+				return Optional.of(new AcceptedOrder(existing.get().receipt(), true));
+			}
+		}
 		PlacedOrder placed = submitOrder.execute(new PlaceOrderCommand(
 				instrument.get(),
 				command.side(),
@@ -55,9 +61,10 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 				placed.status(),
 				placed.size(),
 				placed.price(),
-				command.datetime()));
+				command.datetime(),
+				command.idempotencyKey()));
 		accounts.save(placed.account());
-		return Optional.of(new OrderReceipt(
+		return Optional.of(new AcceptedOrder(new OrderReceipt(
 				id,
 				command.userId(),
 				command.instrumentId(),
@@ -66,6 +73,6 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 				placed.status(),
 				placed.size(),
 				placed.price(),
-				command.datetime()));
+				command.datetime()), false));
 	}
 }

@@ -17,7 +17,8 @@ public record NewOrder(
 		BigDecimal amount,
 		BigDecimal limitPrice,
 		MarketDay day,
-		LocalDateTime datetime) {
+		LocalDateTime datetime,
+		String idempotencyKey) {
 
 	public NewOrder {
 		Objects.requireNonNull(side, "side");
