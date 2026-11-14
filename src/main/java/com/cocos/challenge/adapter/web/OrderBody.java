@@ -48,6 +48,33 @@ record OrderBody(
 				amount,
 				price,
 				RequestMarketDay.parse(datetime),
-				timestamp);
+				timestamp,
+				null);
+	}
+
+	NewOrder toCommand(String idempotencyKey) {
+		NewOrder command = toCommand();
+		return new NewOrder(
+				command.userId(),
+				command.instrumentId(),
+				command.side(),
+				command.type(),
+				command.quantity(),
+				command.amount(),
+				command.limitPrice(),
+				command.day(),
+				command.datetime(),
+				normalizeKey(idempotencyKey));
+	}
+
+	private static String normalizeKey(String idempotencyKey) {
+		if (isNull(idempotencyKey) || idempotencyKey.isBlank()) {
+			return null;
+		}
+		String key = idempotencyKey.trim();
+		if (key.length() > 64) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Idempotency-Key is too long");
+		}
+		return key;
 	}
 }

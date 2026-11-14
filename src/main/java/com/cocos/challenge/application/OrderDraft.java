@@ -16,7 +16,8 @@ public record OrderDraft(
 		OrderStatus status,
 		int size,
 		BigDecimal price,
-		LocalDateTime datetime) {
+		LocalDateTime datetime,
+		String idempotencyKey) {
 
 	public OrderDraft {
 		Objects.requireNonNull(side, "side");

@@ -30,8 +30,8 @@ public class PostgresOrders implements OrderLedger {
 		GeneratedKeyHolder keys = new GeneratedKeyHolder();
 		jdbc.update(connection -> {
 			PreparedStatement statement = connection.prepareStatement("""
-					INSERT INTO orders (instrumentid, userid, size, price, type, side, status, datetime)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+					INSERT INTO orders (instrumentid, userid, size, price, type, side, status, datetime, idempotency_key)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 					""", new String[] {"id"});
 			statement.setInt(1, draft.instrumentId());
 			statement.setInt(2, draft.userId());
@@ -45,6 +45,11 @@ public class PostgresOrders implements OrderLedger {
 			statement.setString(6, draft.side().name());
 			statement.setString(7, draft.status().name());
 			statement.setObject(8, draft.datetime());
+			if (draft.idempotencyKey() == null) {
+				statement.setNull(9, Types.VARCHAR);
+			} else {
+				statement.setString(9, draft.idempotencyKey());
+			}
 			return statement;
 		}, keys);
 		Number key = keys.getKey();
@@ -56,11 +61,25 @@ public class PostgresOrders implements OrderLedger {
 
 	@Override
 	public Optional<StoredOrder> find(int id) {
-		List<StoredOrder> orders = jdbc.query("""
+		return one("""
 				SELECT id, userid, instrumentid, side, type, status, size, price, datetime
 				FROM orders
 				WHERE id = ?
-				""",
+				""", id);
+	}
+
+	@Override
+	public Optional<StoredOrder> findByIdempotency(int userId, String idempotencyKey) {
+		return one("""
+				SELECT id, userid, instrumentid, side, type, status, size, price, datetime
+				FROM orders
+				WHERE userid = ?
+				  AND idempotency_key = ?
+				""", userId, idempotencyKey);
+	}
+
+	private Optional<StoredOrder> one(String sql, Object... args) {
+		List<StoredOrder> orders = jdbc.query(sql,
 				(rs, row) -> new StoredOrder(
 						rs.getInt("id"),
 						rs.getInt("userid"),
@@ -71,7 +90,7 @@ public class PostgresOrders implements OrderLedger {
 						rs.getInt("size"),
 						rs.getBigDecimal("price"),
 						rs.getObject("datetime", LocalDateTime.class)),
-				id);
+				args);
 		return orders.stream().findFirst();
 	}
 
