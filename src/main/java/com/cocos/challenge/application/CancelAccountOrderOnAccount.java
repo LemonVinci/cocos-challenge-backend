@@ -14,11 +14,17 @@ public class CancelAccountOrderOnAccount implements CancelAccountOrder {
 	private final AccountProjectionStore accounts;
 	private final OrderLedger orders;
 	private final CancelOrder cancel;
+	private final OrderMetrics metrics;
 
-	public CancelAccountOrderOnAccount(AccountProjectionStore accounts, OrderLedger orders, CancelOrder cancel) {
+	public CancelAccountOrderOnAccount(
+			AccountProjectionStore accounts,
+			OrderLedger orders,
+			CancelOrder cancel,
+			OrderMetrics metrics) {
 		this.accounts = accounts;
 		this.orders = orders;
 		this.cancel = cancel;
+		this.metrics = metrics;
 	}
 
 	@Override
@@ -35,10 +41,12 @@ public class CancelAccountOrderOnAccount implements CancelAccountOrder {
 			return Optional.of(current.receipt());
 		}
 		CancelOutcome outcome = cancel.execute(new CancelOrderCommand(trade.get(), account));
-		if (OrderStatus.NEW.equals(current.status()) && outcome.cancelled()) {
+		boolean released = OrderStatus.NEW.equals(current.status()) && outcome.cancelled();
+		if (released) {
 			orders.markCancelled(orderId);
 			accounts.save(outcome.account());
 		}
+		metrics.cancelled(outcome.status(), released);
 		return Optional.of(new OrderReceipt(
 				current.id(),
 				current.userId(),

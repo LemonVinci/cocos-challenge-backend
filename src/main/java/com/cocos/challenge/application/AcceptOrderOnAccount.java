@@ -15,16 +15,19 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 	private final Instruments instruments;
 	private final SubmitOrder submitOrder;
 	private final OrderLedger orders;
+	private final OrderMetrics metrics;
 
 	public AcceptOrderOnAccount(
 			AccountProjectionStore accounts,
 			Instruments instruments,
 			SubmitOrder submitOrder,
-			OrderLedger orders) {
+			OrderLedger orders,
+			OrderMetrics metrics) {
 		this.accounts = accounts;
 		this.instruments = instruments;
 		this.submitOrder = submitOrder;
 		this.orders = orders;
+		this.metrics = metrics;
 	}
 
 	@Override
@@ -41,7 +44,9 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 		if (command.idempotencyKey() != null) {
 			Optional<StoredOrder> existing = orders.findByIdempotency(command.userId(), command.idempotencyKey());
 			if (existing.isPresent()) {
-				return Optional.of(new AcceptedOrder(existing.get().receipt(), true));
+				OrderReceipt receipt = existing.get().receipt();
+				metrics.accepted(receipt.side(), receipt.type(), receipt.status(), true);
+				return Optional.of(new AcceptedOrder(receipt, true));
 			}
 		}
 		PlacedOrder placed = submitOrder.execute(new PlaceOrderCommand(
@@ -64,6 +69,7 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 				command.datetime(),
 				command.idempotencyKey()));
 		accounts.save(placed.account());
+		metrics.accepted(command.side(), command.type(), placed.status(), false);
 		return Optional.of(new AcceptedOrder(new OrderReceipt(
 				id,
 				command.userId(),
