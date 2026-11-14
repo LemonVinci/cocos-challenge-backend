@@ -1,5 +1,6 @@
 package com.cocos.challenge.adapter.web;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,9 @@ class OrderEndpointTest {
 
 	@Autowired
 	private JdbcTemplate jdbc;
+
+	@Autowired
+	private MeterRegistry meters;
 
 	@DynamicPropertySource
 	static void database(DynamicPropertyRegistry registry) {
@@ -152,6 +156,9 @@ class OrderEndpointTest {
 
 	@Test
 	void aLimitBuyStaysNewAndOnlyANewOrderCanBeCancelled() throws Exception {
+		double released = orders("orders.cancelled", "status", "CANCELLED", "released", "true");
+		double repeated = orders("orders.cancelled", "status", "CANCELLED", "released", "false");
+		double filled = orders("orders.cancelled", "status", "FILLED", "released", "false");
 		MvcResult placed = mockMvc.perform(post("/orders")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(order("BUY", "LIMIT", "\"quantity\": 20", null, "90")))
@@ -188,6 +195,9 @@ class OrderEndpointTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("FILLED"));
 		assertThat(cash("settled_cash")).isEqualByComparingTo("9850.00");
+		assertThat(orders("orders.cancelled", "status", "CANCELLED", "released", "true")).isEqualTo(released + 1);
+		assertThat(orders("orders.cancelled", "status", "CANCELLED", "released", "false")).isEqualTo(repeated + 1);
+		assertThat(orders("orders.cancelled", "status", "FILLED", "released", "false")).isEqualTo(filled + 1);
 	}
 
 	@Test
@@ -216,6 +226,8 @@ class OrderEndpointTest {
 
 	@Test
 	void theSameIdempotencyKeyReturnsTheStoredOrderAndDoesNotDebitAgain() throws Exception {
+		double placed = orders("orders.accepted", "side", "BUY", "type", "MARKET", "status", "FILLED", "replayed", "false");
+		double replayed = orders("orders.accepted", "side", "BUY", "type", "MARKET", "status", "FILLED", "replayed", "true");
 		String body = order("BUY", "MARKET", "\"quantity\": 10", null);
 		MvcResult created = mockMvc.perform(post("/orders")
 						.header("Idempotency-Key", "buy-pamp-10")
@@ -236,13 +248,25 @@ class OrderEndpointTest {
 
 		assertThat(cash("settled_cash")).isEqualByComparingTo("8500.00");
 		assertThat(orderCount("FILLED")).isEqualTo(1);
+		assertThat(orders("orders.accepted", "side", "BUY", "type", "MARKET", "status", "FILLED", "replayed", "false"))
+				.isEqualTo(placed + 1);
+		assertThat(orders("orders.accepted", "side", "BUY", "type", "MARKET", "status", "FILLED", "replayed", "true"))
+				.isEqualTo(replayed + 1);
 
+		mockMvc.perform(get("/actuator/metrics/orders.accepted"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.measurements[?(@.statistic=='COUNT')].value").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThan(0.0))));
 		mockMvc.perform(get("/actuator/metrics/account.lock"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.measurements[?(@.statistic=='COUNT')].value").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThan(0.0))));
 		mockMvc.perform(get("/actuator/metrics/account.transaction"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.measurements[?(@.statistic=='COUNT')].value").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThan(0.0))));
+	}
+
+	private double orders(String name, String... tags) {
+		var counter = meters.find(name).tags(tags).counter();
+		return counter == null ? 0 : counter.count();
 	}
 
 	private BigDecimal cash(String column) {

@@ -52,7 +52,7 @@ Una orden de negocio que no se puede ejecutar se guarda `REJECTED` y responde 20
 
 Al crear o cancelar una orden, la transacción bloquea la fila de `account_cash` de ese usuario con `SELECT … FOR UPDATE`. Otra orden de la misma cuenta espera y lee los saldos ya actualizados. Usuarios distintos no se bloquean. Leer el portfolio no toma ese lock.
 
-Si el cliente manda el header `Idempotency-Key`, un reintento devuelve la orden ya guardada y no vuelve a mover la caja. Cada conexión espera como máximo un segundo el lock y dos segundos la consulta. El pool tiene 20 conexiones. `account.lock` y `account.transaction` miden esa espera y la duración de la transacción.
+Si el cliente manda el header `Idempotency-Key`, un reintento devuelve la orden ya guardada y no vuelve a mover la caja. Cada conexión espera como máximo un segundo el lock y dos segundos la consulta. El pool tiene 20 conexiones. `account.lock` y `account.transaction` miden esa espera y la duración de la transacción. `orders.accepted` cuenta cada alta por lado, tipo y estado, y si fue un reintento. `orders.cancelled` cuenta cada cancelación y si liberó la reserva. Cada request queda en `http.server.requests`.
 
 ## Base
 
