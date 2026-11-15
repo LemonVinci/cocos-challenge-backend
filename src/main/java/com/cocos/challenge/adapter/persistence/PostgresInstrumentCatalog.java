@@ -9,19 +9,17 @@ import com.cocos.challenge.domain.InstrumentType;
 import com.cocos.challenge.domain.MarketDay;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class PostgresInstrumentCatalog implements InstrumentCatalog, Instruments, MarketPrice {
 
 	private final JdbcTemplate jdbc;
-
-	public PostgresInstrumentCatalog(JdbcTemplate jdbc) {
-		this.jdbc = jdbc;
-	}
 
 	@Override
 	public List<InstrumentMatch> find(String ticker, String name, MarketDay day) {

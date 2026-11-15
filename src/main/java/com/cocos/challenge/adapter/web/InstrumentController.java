@@ -2,6 +2,7 @@ package com.cocos.challenge.adapter.web;
 
 import com.cocos.challenge.application.InstrumentQuery;
 import com.cocos.challenge.application.SearchInstruments;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -11,13 +12,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/instruments")
+@RequiredArgsConstructor
 public class InstrumentController {
 
 	private final SearchInstruments search;
-
-	public InstrumentController(SearchInstruments search) {
-		this.search = search;
-	}
 
 	@GetMapping
 	public List<InstrumentResponse> search(

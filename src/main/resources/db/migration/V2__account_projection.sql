@@ -1,3 +1,6 @@
+-- Foto de la cuenta. orders sigue siendo el libro.
+-- cost_basis guarda el costo total, con escala de más para no perder centavos
+-- al descontar una venta parcial.
 
 CREATE TABLE account_cash (
     user_id integer PRIMARY KEY REFERENCES users (id),

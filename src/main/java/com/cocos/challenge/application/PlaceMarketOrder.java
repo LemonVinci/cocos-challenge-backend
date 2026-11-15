@@ -9,18 +9,16 @@ import com.cocos.challenge.domain.ShareCount;
 import com.cocos.challenge.domain.Side;
 
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public final class PlaceMarketOrder implements PlaceOrder {
 
 	private final MarketPrice prices;
-
-	public PlaceMarketOrder(MarketPrice prices) {
-		this.prices = prices;
-	}
 
 	@Override
 	public boolean supports(OrderType type) {

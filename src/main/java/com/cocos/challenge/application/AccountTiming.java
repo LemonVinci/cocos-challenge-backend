@@ -1,19 +1,17 @@
 package com.cocos.challenge.application;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Component
+@RequiredArgsConstructor
 public class AccountTiming {
 
 	private final MeterRegistry registry;
-
-	public AccountTiming(MeterRegistry registry) {
-		this.registry = registry;
-	}
 
 	public void recordLock(long nanos) {
 		registry.timer("account.lock").record(nanos, TimeUnit.NANOSECONDS);

@@ -9,6 +9,7 @@ import com.cocos.challenge.domain.OrderType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
+import lombok.RequiredArgsConstructor;
 
 import java.sql.PreparedStatement;
 import java.sql.Types;
@@ -17,13 +18,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class PostgresOrders implements OrderLedger {
 
 	private final JdbcTemplate jdbc;
-
-	public PostgresOrders(JdbcTemplate jdbc) {
-		this.jdbc = jdbc;
-	}
 
 	@Override
 	public int insert(OrderDraft draft) {

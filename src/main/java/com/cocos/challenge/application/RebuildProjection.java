@@ -4,21 +4,18 @@ import com.cocos.challenge.domain.Account;
 import com.cocos.challenge.domain.AccountCash;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class RebuildProjection {
 
 	private final OrderHistory orders;
 	private final AccountProjectionStore accounts;
 	private final ApplyBookOrder apply = new ApplyBookOrder();
-
-	public RebuildProjection(OrderHistory orders, AccountProjectionStore accounts) {
-		this.orders = orders;
-		this.accounts = accounts;
-	}
 
 	@Transactional
 	public void rebuildIfEmpty() {

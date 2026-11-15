@@ -4,16 +4,14 @@ import com.cocos.challenge.domain.OrderStatus;
 import com.cocos.challenge.domain.OrderType;
 import com.cocos.challenge.domain.Side;
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class OrderMetrics {
 
 	private final MeterRegistry registry;
-
-	public OrderMetrics(MeterRegistry registry) {
-		this.registry = registry;
-	}
 
 	public void accepted(Side side, OrderType type, OrderStatus status, boolean replayed) {
 		registry.counter(
