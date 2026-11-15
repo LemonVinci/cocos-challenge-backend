@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -33,10 +34,11 @@ jobs:
 
       - name: Publish coverage summary
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          {
-            echo "## Coverage"
-            python3 - << 'PY'
+          python3 - << 'PY' | tee coverage.txt
           import csv
           from pathlib import Path
           report = Path("target/site/jacoco/jacoco.csv")
@@ -56,7 +58,21 @@ jobs:
           else:
               print(f"Line coverage: {covered / total:.1%} ({covered}/{total}). Minimum is 60%.")
           PY
+          {
+            echo "## Coverage"
+            cat coverage.txt
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ] || [ ! -s coverage.txt ]; then
+            exit 0
+          fi
+          body="$(printf '<!-- cocos-coverage -->\n%s\n' "$(cat coverage.txt)")"
+          comment_id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | contains("<!-- cocos-coverage -->")) | .id' | head -n 1)"
+          if [ -n "$comment_id" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" -f body="$body"
+          else
+            gh pr comment "$PR_NUMBER" --body "$body"
+          fi
 
       - name: Upload coverage report
         if: always()
