@@ -3,29 +3,20 @@ package com.cocos.challenge.application;
 import com.cocos.challenge.domain.Account;
 import com.cocos.challenge.domain.OpenOrder;
 import com.cocos.challenge.domain.OrderStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CancelAccountOrderOnAccount implements CancelAccountOrder {
 
 	private final AccountProjectionStore accounts;
 	private final OrderLedger orders;
 	private final CancelOrder cancel;
 	private final OrderMetrics metrics;
-
-	public CancelAccountOrderOnAccount(
-			AccountProjectionStore accounts,
-			OrderLedger orders,
-			CancelOrder cancel,
-			OrderMetrics metrics) {
-		this.accounts = accounts;
-		this.orders = orders;
-		this.cancel = cancel;
-		this.metrics = metrics;
-	}
 
 	@Override
 	@Transactional

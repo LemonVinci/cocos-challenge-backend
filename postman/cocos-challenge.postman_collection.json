@@ -1,0 +1,189 @@
+{
+  "info": {
+    "name": "Cocos Challenge",
+    "description": "Portfolio, búsqueda de instrumentos y órdenes. La fecha 2023-07-14T15:00:00-03:00 es el día de mercado con cotizaciones. El usuario 1 es Emiliano y el instrumento 47 es PAMP.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userId", "value": "1" },
+    { "key": "instrumentId", "value": "47" },
+    { "key": "datetime", "value": "2023-07-14T15:00:00-03:00" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/health",
+            "description": "200 y status UP cuando el proceso y Postgres responden. 503 y status DOWN si la base no está."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Instruments",
+      "item": [
+        {
+          "name": "GET /instruments by ticker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/instruments?ticker=pamp&datetime={{datetime}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["instruments"],
+              "query": [
+                { "key": "ticker", "value": "pamp" },
+                { "key": "datetime", "value": "{{datetime}}" }
+              ]
+            },
+            "description": "datetime es obligatorio. ticker y name son opcionales y se combinan con AND."
+          }
+        },
+        {
+          "name": "GET /instruments by name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/instruments?name=pampa&datetime={{datetime}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["instruments"],
+              "query": [
+                { "key": "name", "value": "pampa" },
+                { "key": "datetime", "value": "{{datetime}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "GET /portfolio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/portfolio?userId={{userId}}&datetime={{datetime}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio"],
+              "query": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "datetime", "value": "{{datetime}}" }
+              ]
+            },
+            "description": "404 si el usuario no existe."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "POST /orders market buy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('orderId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "buy-pamp-1", "description": "Opcional. El mismo valor devuelve la orden ya guardada." }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"BUY\",\n  \"type\": \"MARKET\",\n  \"quantity\": 1,\n  \"datetime\": \"{{datetime}}\"\n}"
+            },
+            "url": "{{baseUrl}}/orders",
+            "description": "201 la primera vez. 200 si se repite la misma Idempotency-Key. Guarda el id en orderId."
+          }
+        },
+        {
+          "name": "POST /orders limit buy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) pm.collectionVariables.set('orderId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "limit-pamp-1" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"instrumentId\": {{instrumentId}},\n  \"side\": \"BUY\",\n  \"type\": \"LIMIT\",\n  \"quantity\": 1,\n  \"price\": 90,\n  \"datetime\": \"{{datetime}}\"\n}"
+            },
+            "url": "{{baseUrl}}/orders",
+            "description": "Queda NEW y reserva el efectivo. Ese id es el que se puede cancelar."
+          }
+        },
+        {
+          "name": "POST /orders/{id}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel",
+            "description": "Solo una orden NEW libera la reserva. 404 si el id no existe."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "item": [
+        {
+          "name": "GET /actuator/metrics/orders.accepted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/metrics/orders.accepted"
+          }
+        },
+        {
+          "name": "GET /actuator/metrics/orders.cancelled",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/metrics/orders.cancelled"
+          }
+        },
+        {
+          "name": "GET /actuator/metrics/http.server.requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/metrics/http.server.requests"
+          }
+        }
+      ]
+    }
+  ]
+}

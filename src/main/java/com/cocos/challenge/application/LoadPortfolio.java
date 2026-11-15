@@ -5,20 +5,17 @@ import com.cocos.challenge.domain.AccountCash;
 import com.cocos.challenge.domain.Portfolio;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class LoadPortfolio implements ViewPortfolio {
 
 	private final AccountProjectionStore accounts;
 	private final MarketBoard market;
-
-	public LoadPortfolio(AccountProjectionStore accounts, MarketBoard market) {
-		this.accounts = accounts;
-		this.market = market;
-	}
 
 	@Override
 	@Transactional(readOnly = true)

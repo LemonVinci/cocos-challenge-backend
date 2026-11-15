@@ -3,12 +3,14 @@ package com.cocos.challenge.application;
 import com.cocos.challenge.domain.Account;
 import com.cocos.challenge.domain.BookSide;
 import com.cocos.challenge.domain.Instrument;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptOrderOnAccount implements AcceptOrder {
 
 	private final AccountProjectionStore accounts;
@@ -16,19 +18,6 @@ public class AcceptOrderOnAccount implements AcceptOrder {
 	private final SubmitOrder submitOrder;
 	private final OrderLedger orders;
 	private final OrderMetrics metrics;
-
-	public AcceptOrderOnAccount(
-			AccountProjectionStore accounts,
-			Instruments instruments,
-			SubmitOrder submitOrder,
-			OrderLedger orders,
-			OrderMetrics metrics) {
-		this.accounts = accounts;
-		this.instruments = instruments;
-		this.submitOrder = submitOrder;
-		this.orders = orders;
-		this.metrics = metrics;
-	}
 
 	@Override
 	@Transactional

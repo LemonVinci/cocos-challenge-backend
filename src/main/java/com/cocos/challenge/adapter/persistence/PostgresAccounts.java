@@ -16,6 +16,7 @@ import com.cocos.challenge.domain.Quote;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -25,17 +26,13 @@ import java.util.Map;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class PostgresAccounts implements OrderHistory, AccountProjectionStore, MarketBoard {
 
 	private static final long PROJECTION_LOCK = 824211L;
 
 	private final JdbcTemplate jdbc;
 	private final AccountTiming timing;
-
-	public PostgresAccounts(JdbcTemplate jdbc, AccountTiming timing) {
-		this.jdbc = jdbc;
-		this.timing = timing;
-	}
 
 	@Override
 	public List<BookOrder> chronological() {

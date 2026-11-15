@@ -4,6 +4,7 @@ import com.cocos.challenge.application.AcceptOrder;
 import com.cocos.challenge.application.AcceptedOrder;
 import com.cocos.challenge.application.AccountTiming;
 import com.cocos.challenge.application.CancelAccountOrder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,17 +17,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
 	private final AcceptOrder accept;
 	private final CancelAccountOrder cancel;
 	private final AccountTiming timing;
-
-	public OrderController(AcceptOrder accept, CancelAccountOrder cancel, AccountTiming timing) {
-		this.accept = accept;
-		this.cancel = cancel;
-		this.timing = timing;
-	}
 
 	@PostMapping
 	public ResponseEntity<OrderResponse> place(
